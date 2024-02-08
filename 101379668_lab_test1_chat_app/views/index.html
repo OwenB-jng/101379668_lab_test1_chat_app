@@ -1,0 +1,83 @@
+<!-- Owen Beattie 101379668 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Labtest Chat App</title>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body style="background-color: beige; 
+            font-family: 'Arial', sans-serif; 
+            text-align: center; margin: 0; 
+            padding: 20px;">
+    <h1>Labtest Chat App</h1>
+    <script>
+        const clientSocket = io();
+        clientSocket.on('connect', () => {
+            console.log('Connected to server');
+        });
+        clientSocket.on('message', (message) => {
+            console.log('New message:', message);
+            clientSocket.send('Hello as a client!');
+        });
+        clientSocket.on('new_chat_message', (data) => {
+            console.log(data);
+        });
+
+        clientSocket.on('new_group_message', (data) => {
+            console.log('Received new group message:', data);
+            const messageList = document.getElementById('messageList');
+            const message = document.createElement('div');
+            message.innerHTML = `<p><b>${data.group_name}: ${data.senderID}</b>: ${data.message}</p>`;
+            messageList.appendChild(message);
+        });
+
+        clientSocket.on('disconnect', () => {
+            console.log('Disconnected from server');
+        });
+
+        function joinGroup(group_name) {
+            const msg = {
+                sender: 'client',
+                senderID: clientSocket.id,
+                group_name: group_name
+            }
+            clientSocket.emit('join_group', msg);
+            clientSocket.currentGroup = group_name; 
+            console.log('Currently joined group:', clientSocket.currentGroup); 
+        }
+
+        function sendGroupMessage() {
+            const group_message = document.getElementById('group_message').value;
+            console.log('Currently joined group:', clientSocket.currentGroup);
+            const msg = {
+                message: group_message,
+                sender: 'client',
+                senderID: clientSocket.id,
+                group_name: clientSocket.currentGroup
+            }
+
+    // Clear the input field after sending the message
+    document.getElementById('group_message').value = '';
+
+    // Emit the message to the server
+    clientSocket.emit('group_message', msg);
+}
+
+
+    </script>
+    <hr/>
+    <h2>Group Chat</h2>
+    <h3 id="user"></h3>
+    <h4>Select room to join</h4>
+    <button onclick="joinGroup('devops')">Devops</button>
+    <button onclick="joinGroup('sports')">Sports</button>
+    <button onclick="joinGroup('javascript')">Javascript</button>
+    <button onclick="joinGroup('nature')">Nature</button>
+    <hr>
+    <input type="text" id="group_message" placeholder="Enter Message">
+    <button onclick="sendGroupMessage()">Send Message to Current Group</button>
+    <div id="messageList"> no message yet</div>
+</body>
+</html>
